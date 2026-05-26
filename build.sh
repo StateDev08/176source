@@ -1,84 +1,100 @@
 #!/bin/bash
-GS=cgame;
-NET=cnet;
-SKILL=cskill;
+#
+# Build script for Perfect World 1.7.6 Server
+# Works with any $HOME / any user — no hardcoded /root/ paths.
+#
+
+set -e
+
+# Resolve the project root (directory where this script lives)
+PROJROOT="$(cd "$(dirname "$0")" && pwd)"
+
+GS=cgame
+NET=cnet
+SKILL=cskill
+SHARE="$PROJROOT/share"
+
 echo ""
 echo "=========================== setup $NET ==========================="
 echo ""
-cd $NET
-rm common
-rm io
-rm mk
-rm storage
-rm rpc
-rm lua
-rm rpcgen
-ln -s ~/share/common/ .
-ln -s ~/share/io/ .
-ln -s ~/share/mk/ .
-ln -s ~/share/storage/ .
-ln -s ~/share/rpc/ .
-ln -s ~/share/lua/ .
-ln -s ~/share/rpcgen .
-cd ..
+cd "$PROJROOT/$NET"
+rm -f common io mk storage rpc lua rpcgen
+ln -sf "$SHARE/common/" .
+ln -sf "$SHARE/io/" .
+ln -sf "$SHARE/mk/" .
+ln -sf "$SHARE/storage/" .
+ln -sf "$SHARE/rpc/" .
+ln -sf "$SHARE/lua/" .
+ln -sf "$SHARE/rpcgen" .
+cd "$PROJROOT"
 echo ""
 echo "=========================== setup iolib ==========================="
 echo ""
-if [ ! -d iolib ]; then
-	mkdir iolib
-fi;
-cd iolib;
-if [ ! -d inc ]; then
-	mkdir inc
-fi;
-cd inc
-rm *
-ln -s ../../$NET/gamed/auctionsyslib.h
-ln -s ../../$NET/gamed/sysauctionlib.h 
-ln -s ../../$NET/gdbclient/db_if.h
-ln -s ../../$NET/gamed/factionlib.h
-ln -s ../../$NET/common/glog.h
-ln -s ../../$NET/gamed/gsp_if.h
-ln -s ../../$NET/gamed/mailsyslib.h
-ln -s ../../$NET/gamed/privilege.hxx
-ln -s ../../$NET/gamed/sellpointlib.h
-ln -s ../../$NET/gamed/stocklib.h
-ln -s ../../$NET/gamed/webtradesyslib.h
-ln -s ../../$NET/gamed/kingelectionsyslib.h
-ln -s ../../$NET/gamed/pshopsyslib.h
-ln -s ../../$NET/gdbclient/db_os.h
-ln -s ~/share/io/luabase.h
+mkdir -p iolib/inc
+cd iolib/inc
+rm -f *.h *.hxx
+ln -sf "../../$NET/gamed/auctionsyslib.h"
+ln -sf "../../$NET/gamed/sysauctionlib.h"
+ln -sf "../../$NET/gdbclient/db_if.h"
+ln -sf "../../$NET/gamed/factionlib.h"
+ln -sf "../../$NET/common/glog.h"
+ln -sf "../../$NET/gamed/gsp_if.h"
+ln -sf "../../$NET/gamed/mailsyslib.h"
+ln -sf "../../$NET/gamed/privilege.hxx"
+ln -sf "../../$NET/gamed/sellpointlib.h"
+ln -sf "../../$NET/gamed/stocklib.h"
+ln -sf "../../$NET/gamed/webtradesyslib.h"
+ln -sf "../../$NET/gamed/kingelectionsyslib.h"
+ln -sf "../../$NET/gamed/pshopsyslib.h"
+ln -sf "../../$NET/gdbclient/db_os.h"
+ln -sf "$SHARE/io/luabase.h"
 
-cd ..
-rm lib*
-ln -s ../$NET/io/libgsio.a
-ln -s ../$NET/gdbclient/libdbCli.a
-ln -s ../../$SKILL/skill/libskill.a
-ln -s ../$NET/gamed/libgsPro2.a
-ln -s ../$NET/logclient/liblogCli.a
-cd ..
-echo ""
-echo "======================== modify Rules.make ========================"
-echo ""
-EPWD=`pwd|sed -e 's/\//\\\\\//g'`;
-cd $GS
-sed -i -e "s/IOPATH=.*$/IOPATH=$EPWD\/iolib/g" -e "s/BASEPATH=.*$/BASEPATH=$EPWD\/$GS/g" Rules.make
+cd "$PROJROOT/iolib"
+rm -f lib*.a
+ln -sf "../$NET/io/libgsio.a"
+ln -sf "../$NET/gdbclient/libdbCli.a"
+ln -sf "../$SKILL/skill/libskill.a"
+ln -sf "../$NET/gamed/libgsPro2.a"
+ln -sf "../$NET/logclient/liblogCli.a"
+cd "$PROJROOT"
 echo ""
 echo "====================== softlink libskill.so ======================="
 echo ""
-cd gs
-rm libskill.so
-ln -s ../../cskill/libskill.so 
-cd ../../
+cd "$PROJROOT/$GS/gs"
+rm -f libskill.so
+ln -sf "../../$SKILL/libskill.so"
+cd "$PROJROOT"
+
+buildlicense()
+{
+	echo ""
+	echo "========================== build LicenseCli.a ============================"
+	echo ""
+	cd "$PROJROOT/$NET/licenseclient"
+	make clean
+	make -j$(nproc)
+	cd "$PROJROOT"
+}
+
+buildlua()
+{
+	echo ""
+	echo "========================== build liblua.a ============================"
+	echo ""
+	cd "$PROJROOT/share/lua/src"
+	make clean
+	make -j$(nproc)
+	cd "$PROJROOT"
+}
 
 buildrpcgen()
 {
 	echo ""
 	echo "========================== $NET rpcgen ============================"
 	echo ""
-	cd $NET
+	cd "$PROJROOT/$NET"
 	./rpcgen rpcalls.xml
-	cd ..
+	cd "$PROJROOT"
 }
 
 buildrpcdata()
@@ -86,72 +102,64 @@ buildrpcdata()
 	echo ""
 	echo "========================== $NET CP rpcdata ============================"
 	echo ""
-	#cp ./add/ec_sqlarenateammember /root/cnet/rpcdata/ec_sqlarenateammember
-	#cp ./add/ec_sqlarenateam /root/cnet/rpcdata/ec_sqlarenateam
 }
 
 
 installfunc()
 {
 	echo ""
-	echo "======================= Instalando as deamons ========================="
+	echo "======================= Installing daemons ========================="
 	echo ""
-	cp ./cgame/gs/gs /home/gamed/gs
-	cp ./cgame/gs/libtask.so /home/gamed/libtask.so
-	cp ./cskill/libskill.so /home/gamed/libskill.so
-	cp ./cnet/gfaction/gfactiond /home/gfactiond/gfactiond
-	cp ./cnet/gauthd/gauthd /home/gauthd/gauthd
-	cp ./cnet/uniquenamed/uniquenamed /home/uniquenamed/uniquenamed
-	cp ./cnet/gamedbd/gamedbd /home/gamedbd/gamedbd
-	cp ./cnet/gdeliveryd/gdeliveryd /home/gdeliveryd/gdeliveryd
-	cp ./cnet/glinkd/glinkd /home/glinkd/glinkd
-	cp ./cnet/gacd/gacd /home/gacd/gacd
-	cp ./cnet/logservice/logservice /home/logservice/logservice
-	echo ""
-	echo "============================== Sucesso!! ==============================="
-	echo ""
+	mkdir -p /home/gamed /home/gfactiond /home/gauthd /home/uniquenamed
+	mkdir -p /home/gamedbd /home/gdeliveryd /home/glinkd /home/gacd /home/logservice
 
+	cp "$PROJROOT/$GS/gs/gs"              /home/gamed/gs
+	cp "$PROJROOT/$GS/gs/libtask.so"      /home/gamed/libtask.so
+	cp "$PROJROOT/$SKILL/libskill.so"     /home/gamed/libskill.so
+	cp "$PROJROOT/$NET/gfaction/gfactiond" /home/gfactiond/gfactiond
+	cp "$PROJROOT/$NET/gauthd/gauthd"     /home/gauthd/gauthd
+	cp "$PROJROOT/$NET/uniquenamed/uniquenamed" /home/uniquenamed/uniquenamed
+	cp "$PROJROOT/$NET/gamedbd/gamedbd"   /home/gamedbd/gamedbd
+	cp "$PROJROOT/$NET/gdeliveryd/gdeliveryd" /home/gdeliveryd/gdeliveryd
+	cp "$PROJROOT/$NET/glinkd/glinkd"     /home/glinkd/glinkd
+	cp "$PROJROOT/$NET/gacd/gacd"         /home/gacd/gacd
+	cp "$PROJROOT/$NET/logservice/logservice" /home/logservice/logservice
+	echo ""
+	echo "============================== Success!! ==============================="
+	echo ""
 }
 
-buildgslib() #Ç°¸úrpcgen
+buildgslib()
 {
-	#Ã»ÓÐlibgsio.aµÄ±àÒë£¬ÔÚshare¿âÖÐ£¬Ò»´Î±àÒë²»ÔÚ±ä
-	#Ã»ÓÐlibTrace.aµÄ±àÒë£¬ÔÚqgame_dev/qgame/collisionÖÐ£¬Ò»´Î±àÒë²»ÔÚ±ä	
 	echo "======================= build liblogCli.a ========================="
 	echo ""
-	cd $NET
-	cd logclient
+	cd "$PROJROOT/$NET/logclient"
 	make clean
 	make -f Makefile.gs clean
-	make -f Makefile.gs -j32
-	cd ..
+	make -f Makefile.gs -j$(nproc)
+	cd "$PROJROOT"
 	echo ""
 	echo "======================== build libgsPro2.a ========================="
 	echo ""
-	cd gamed
+	cd "$PROJROOT/$NET/gamed"
 	make clean
-	make lib -j32
-	cd ..
+	make lib -j$(nproc)
+	cd "$PROJROOT"
 	echo ""
 	echo "======================== build libdbCli.a =========================="
 	echo ""
-	cd gdbclient
+	cd "$PROJROOT/$NET/gdbclient"
 	make clean
-	make lib -j32
-	cd ..
-	cd ..
+	make lib -j$(nproc)
+	cd "$PROJROOT"
 	echo ""
 	echo "============================ make libgs ============================"
 	echo ""
-	cd $GS
+	cd "$PROJROOT/$GS"
 	cd libgs
-	mkdir -p io
-	mkdir -p gs
-	mkdir -p db
-	mkdir -p sk
-	mkdir -p log
+	mkdir -p io gs db sk log
 	make
-	cd ../../
+	cd "$PROJROOT"
 }
 
 buildskill()
@@ -159,17 +167,11 @@ buildskill()
 	echo ""
 	echo "============================= ant gen =============================="
 	echo ""
-	cd cskill/skill
-	cd gen
-	if [ ! -d skills ]; then
-		mkdir skills
-	fi
-	if [ ! -d buffcondition ]; then
-		mkdir buffcondition
-	fi
+	cd "$PROJROOT/$SKILL/skill/gen"
+	mkdir -p skills buffcondition
 	ant
 	echo ""
-	echo "========================== gen skils =============================="
+	echo "========================== gen skills =============================="
 	echo ""
 	chmod a+x gen
 #	./gen
@@ -177,55 +179,42 @@ buildskill()
 	echo "======================= build libskills.o ========================="
 	echo ""
 	make clean
-	make -j32
-	cd ../
+	make -j$(nproc)
+	cd "$PROJROOT"
 }
 
 buildgame()
 {
-
 	echo ""
 	echo "======================= build cgame ========================="
 	echo ""
-	echo ""
-	echo "======================= build cgame ========================="
-	echo ""
-	# Use relative path instead of hardcoded home
-	cd $GS
-#	cvs up
+	cd "$PROJROOT/$GS"
 	make clean
-	make -j32	
-	cd ../
+	make -j$(nproc)
+	cd "$PROJROOT"
 }
 
 buildtask()
 {
-
 	echo ""
 	echo "======================= build libtask.o ========================="
 	echo ""
-	echo ""
-	echo "======================= build libtask.o ========================="
-	echo ""
-	# Removing 'cd ~/' to use relative path
-	cd $GS
-	cd gs
-	cd task
+	cd "$PROJROOT/$GS/gs/task"
 	make clean
-	make lib -j32
-	cd ../../../
+	make lib -j$(nproc)
+	cd "$PROJROOT"
 }
 
-builddeliver() # Ç°¸úrpcgen
+builddeliver()
 {
-	cd $NET
+	cd "$PROJROOT/$NET"
 
 	echo ""
 	echo "========================== build gauthd =============================="
 	echo ""
 	cd gauthd
 	make clean
-	make -j32
+	make -j$(nproc)
 	cd ..
 
 	echo ""
@@ -233,7 +222,7 @@ builddeliver() # Ç°¸úrpcgen
 	echo ""
 	cd logservice
 	make clean
-	make -j32
+	make -j$(nproc)
 	cd ..
 
 	echo ""
@@ -241,7 +230,7 @@ builddeliver() # Ç°¸úrpcgen
 	echo ""
 	cd gacd
 	make clean
-	make -j32
+	make -j$(nproc)
 	cd ..
 
 	echo ""
@@ -249,7 +238,7 @@ builddeliver() # Ç°¸úrpcgen
 	echo ""
 	cd glinkd
 	make clean
-	make -j32
+	make -j$(nproc)
 	cd ..
 
 	echo ""
@@ -257,7 +246,7 @@ builddeliver() # Ç°¸úrpcgen
 	echo ""
 	cd gdeliveryd
 	make clean
-	make -j32
+	make -j$(nproc)
 	cd ..
 
 	echo ""
@@ -265,7 +254,7 @@ builddeliver() # Ç°¸úrpcgen
 	echo ""
 	cd gamedbd
 	make clean
-	make -j32
+	make -j$(nproc)
 	cd ..
 
 	echo ""
@@ -273,15 +262,14 @@ builddeliver() # Ç°¸úrpcgen
 	echo ""
 	cd uniquenamed
 	make clean
-	make -j32
+	make -j$(nproc)
 	cd ..
 
 	echo ""
 	echo "========================== build libgsio =============================="
 	echo ""
-	cd $NET
-	cd io
-	make lib -j32
+	cd "$PROJROOT/$NET/io"
+	make lib -j$(nproc)
 	cd ..
 
 	echo ""
@@ -290,21 +278,21 @@ builddeliver() # Ç°¸úrpcgen
 	cd gfaction
 	make clean
 	if [ -d "operations" ]; then cp operations/*.h . 2>/dev/null; cp operations/*.hxx . 2>/dev/null; cp operations/*.cxx . 2>/dev/null; fi
-	make -j32
+	make -j$(nproc)
 	cd ..
 	
-	cd ..
+	cd "$PROJROOT"
 }
 
 builddeliveryd()
 {
-	cd $NET
+	cd "$PROJROOT/$NET"
 	echo ""
 	echo "========================== build gdeliveryd =============================="
 	echo ""
 	cd gdeliveryd
 	make clean
-	make -j32
+	make -j$(nproc)
 	cd ..
 
 	echo ""
@@ -312,7 +300,7 @@ builddeliveryd()
 	echo ""
 	cd gamedbd
 	make clean
-	make -j32
+	make -j$(nproc)
 	cd ..
 
 	echo ""
@@ -320,15 +308,14 @@ builddeliveryd()
 	echo ""
 	cd uniquenamed
 	make clean
-	make -j32
+	make -j$(nproc)
 	cd ..
 
 	echo ""
 	echo "========================== build libgsio =============================="
 	echo ""
-	cd $NET
-	cd io
-	make lib -j32
+	cd "$PROJROOT/$NET/io"
+	make lib -j$(nproc)
 	cd ..
 
 	echo ""
@@ -336,7 +323,7 @@ builddeliveryd()
 	echo ""
 	cd gfaction
 	make clean
-	make -j32
+	make -j$(nproc)
 	cd ..
 
 	echo ""
@@ -344,9 +331,10 @@ builddeliveryd()
 	echo ""
 	cd gacd
 	make clean
-	make -j32
+	make -j$(nproc)
 	cd ..
 
+	cd "$PROJROOT"
 }
 
 
@@ -355,29 +343,26 @@ buildgs()
 	echo ""
 	echo "========================== build gs =============================="
 	echo ""
-	cd $GS
-	cd gs
+	cd "$PROJROOT/$GS/gs"
 	make clean
-	make -j32
-	cd ../../
+	make -j$(nproc)
+	cd "$PROJROOT"
 }
 
 rebuilddeliver()
 {
-	rpcgen;
-	#buildrpcdata;
-	builddeliver;
+	buildrpcgen
+	builddeliver
 }
 
 rebuilddeliver2()
 {
-	builddeliver;
+	builddeliver
 }
 
 rebuildgs()
 {
-	#buildrpcdata;
-	buildgslib;
+	buildgslib
 }
 
 rebuildall()
@@ -386,36 +371,37 @@ rebuildall()
 	echo "========================== build game all =============================="
 	echo ""
 
-	buildrpcgen;
-	buildrpcdata;
-	builddeliver;
-	buildgslib;
-	buildskill;
-	buildgame;
-	installfunc;
+	buildlua
+	buildlicense
+	buildrpcgen
+	buildrpcdata
+	builddeliver
+	buildgslib
+	buildskill
+	buildgame
+	installfunc
 }
 
 install()
 {
 	echo ""
-	echo "========================== Instalando.... =============================="
+	echo "========================== Installing.... =============================="
 	echo ""
 
-	installfunc;
+	installfunc
 }
 
 
 if [ $# -gt 0 ]; then
 	if [ "$1" = "deliver" ]; then
-		rebuilddeliver;
+		rebuilddeliver
 	elif [ "$1" = "gs" ]; then
-		rebuildgs;
+		rebuildgs
 	elif [ "$1" = "all" ]; then
-		rebuildall;
+		rebuildall
 	elif [ "$1" = "install" ]; then
-		install;
+		install
 	elif [ "$1" = "deliveryd" ]; then
-		rebuilddeliver2;
-
+		rebuilddeliver2
 	fi
 fi

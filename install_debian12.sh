@@ -1,85 +1,78 @@
 #!/bin/bash
 
-# Install Script for Perfect World 1.7.6 Source (Debian 12)
-# Usage: chmod +x install_debian12.sh && ./install_debian12.sh
+# Install Script for Perfect World 1.7.6 Source (Debian 12 / Ubuntu 22.04+)
+# Usage: chmod +x install_debian12.sh && sudo ./install_debian12.sh
+#
+# Works with any user — no hardcoded /root/ paths.
 
-VERSION="1.4" # Increment this on every update
+VERSION="2.0"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo -e "${GREEN}[+] Starting Setup for Debian 12 (v${VERSION})...${NC}"
+echo -e "${GREEN}[+] Starting Setup (v${VERSION})...${NC}"
 
-# ... (omitted lines)
+# 1. Check root privileges
+if [ "$(id -u)" -ne 0 ]; then
+    echo -e "${RED}[!] This script must be run as root (sudo).${NC}"
+    exit 1
+fi
 
-# Debian 12 dependencies for C++20 build
-# Note: libmysqlclient-dev is replaced by libmariadb-dev-compat on Debian 12
+# 2. Install dependencies
+echo -e "${GREEN}[+] Installing build dependencies...${NC}"
+apt-get update -qq
 apt-get install -y --no-install-recommends build-essential cmake gcc g++ make \
     libxml2-dev libssl-dev libpcre3-dev zlib1g-dev \
     libmariadb-dev-compat libmariadb-dev libreadline-dev \
-    ant default-jdk dos2unix libxml-dom-perl
+    ant default-jdk dos2unix libxml-dom-perl \
+    libcurl4-openssl-dev libjsoncpp-dev
 
-# 3. Clone Repository
-REPO_DIR="/root/176source"
-REPO_URL="https://github.com/code-bynary/176source.git"
-
-if [ -d "$REPO_DIR" ]; then
-    echo -e "${YELLOW}[!] Directory $REPO_DIR already exists. Pulling latest changes...${NC}"
-    cd "$REPO_DIR"
-    git pull
+# 3. Determine repo directory (use script location or current directory)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "$SCRIPT_DIR/build.sh" ]; then
+    REPO_DIR="$SCRIPT_DIR"
+    echo -e "${GREEN}[+] Using existing repo at $REPO_DIR${NC}"
 else
-    echo -e "${GREEN}[+] Cloning Repository form $REPO_URL...${NC}"
-    git clone "$REPO_URL" "$REPO_DIR"
-    cd "$REPO_DIR"
+    REPO_DIR="$(pwd)/176source"
+    REPO_URL="https://github.com/StateDev08/176source.git"
+    if [ -d "$REPO_DIR" ]; then
+        echo -e "${YELLOW}[!] Directory $REPO_DIR already exists. Pulling latest changes...${NC}"
+        cd "$REPO_DIR"
+        git pull
+    else
+        echo -e "${GREEN}[+] Cloning Repository from $REPO_URL...${NC}"
+        git clone "$REPO_URL" "$REPO_DIR"
+    fi
 fi
 
-# 4. Setup Directory Structure (Fixing paths for build.sh)
-# The build script expects 'share' in directory above or home (~/share)
-echo -e "${GREEN}[+] Configuring Directory Structure...${NC}"
+cd "$REPO_DIR"
 
-if [ -d "share" ]; then
-    echo -e "${GREEN}[+] Moving 'share' directory to /root/share as expected by build.sh...${NC}"
-    rm -rf /root/share
-    cp -r share /root/
-fi
-
-# 5. Fix Permissions and Line Endings
-dos2unix -v build.sh install_debian12.sh
+# 4. Fix Permissions and Line Endings
+echo -e "${GREEN}[+] Fixing permissions and line endings...${NC}"
+dos2unix -v build.sh install_debian12.sh 2>/dev/null || true
 chmod +x build.sh
 
-# Ensure rpcgen is executable in share directory (source of symlink)
-if [ -f "/root/share/rpcgen" ]; then
-    echo -e "${GREEN}[+] Fixing rpcgen permissions...${NC}"
-    chmod +x /root/share/rpcgen
-    dos2unix /root/share/rpcgen
+if [ -f "share/rpcgen" ]; then
+    chmod +x share/rpcgen
+    dos2unix share/rpcgen 2>/dev/null || true
 fi
 
-# Ensure xmlcoder.pl is executable (called by rpcgen)
-if [ -f "/root/share/rpc/xmlcoder.pl" ]; then
-    echo -e "${GREEN}[+] Fixing xmlcoder.pl permissions...${NC}"
-    chmod +x /root/share/rpc/xmlcoder.pl
-    dos2unix /root/share/rpc/xmlcoder.pl
+if [ -f "share/rpc/xmlcoder.pl" ]; then
+    chmod +x share/rpc/xmlcoder.pl
+    dos2unix share/rpc/xmlcoder.pl 2>/dev/null || true
 fi
 
-# 6. Prepare Output Directories
+# 5. Prepare Output Directories
 echo -e "${GREEN}[+] Creating Output Directories in /home...${NC}"
-mkdir -p /home/gamed
-mkdir -p /home/gfactiond
-mkdir -p /home/gauthd
-mkdir -p /home/uniquenamed
-mkdir -p /home/gamedbd
-mkdir -p /home/gdeliveryd
-mkdir -p /home/glinkd
-mkdir -p /home/gacd
-mkdir -p /home/logservice
+mkdir -p /home/gamed /home/gfactiond /home/gauthd /home/uniquenamed
+mkdir -p /home/gamedbd /home/gdeliveryd /home/glinkd /home/gacd /home/logservice
 
-# 7. Build
+# 6. Build
 echo -e "${GREEN}[+] Starting Build Process...${NC}"
 echo -e "${YELLOW}[+] Log will be saved to /var/log/build_pw.log${NC}"
 
-# Use standard build script and pipe output to log and stdout
 ./build.sh all 2>&1 | tee /var/log/build_pw.log
 
 echo -e "${GREEN}[+] Setup and Build Finished!${NC}"

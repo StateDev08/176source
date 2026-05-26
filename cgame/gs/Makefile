@@ -5,7 +5,7 @@ INOBJ = instance/*.o
 
 SUBDIR = io item template task  pathfinding  instance ai wallow mobile
 SUBLIB = usercmd/libusercmd.a
-LIC_DIR = /root/cnet/licenseclient/vm
+LIC_DIR = $(PROJROOT)/cnet/licenseclient/vm
 IOOBJ = io/msgio.o
 ITEMOBJ = item/*.o
 WALLOWOBJ = wallow/*.o
@@ -23,11 +23,8 @@ all: 	gs
 gs:	$(BASEOBJ) $(GSOBJ) $(SUBDIR) 
 	$(LD) -fPIC $(BASEOBJ) $(INOBJ) $(GSOBJ) $(SUBOBJ) $(CMLIB) $(LICENSE_OBJ) libtask.so $(ALLLIB) -o gs
 	
-	rm -rf /home/gamed/gs
-	cp gs /home/gamed/gs
-	rm -rf /home/gamed/libtask.so
-	cp libtask.so /home/gamed/libtask.so
-	chmod -R 0755 /home
+	@echo "Build complete: gs"
+	@echo "Run 'make install' to copy binaries to /home/gamed/"
 
 	
 test:	$(BASEOBJ) $(GSOBJ) $(SUBDIR) 
