@@ -1,1 +1,1 @@
-/root/cgame/gs/dbgprt.h
+../../cgame/gs/dbgprt.h

@@ -1,7 +1,5 @@
 # Binaries and Object files
 *.o
-*.a
-*.so
 *.lo
 *.la
 *.obj
@@ -16,17 +14,6 @@
 *.rar
 *.7z
 
-# Makefile targets and temporary files
-Makefile
-!cgame/gs/Makefile
-!cgame/libcm/Makefile
-!cgame/collision/Makefile
-!cgame/ptemplate/Makefile
-!iolib/Makefile
-!iolib/io/Makefile
-!iolib/rpc/Makefile
-!iolib/rpc/test/Makefile
-
 # Logs and temporary data
 *.log
 *.tmp
@@ -34,20 +21,23 @@ Makefile
 dump_*
 core
 
-# Perfect World Specific
-# gs (Removed to allow cgame/gs directory)
+# Perfect World Specific — built binaries (not source)
 cgame/gs/gs
-
-gamedbd
-gdeliveryd
-glinkd
-gfactiond
-yunovad
 
 # VS Code / IDE settings
 .vscode/
 .idea/
 .vs/
+
+# Build-time symlinks (created by build.sh)
+cnet/common
+cnet/io
+cnet/mk
+cnet/storage
+cnet/rpc
+cnet/lua
+cnet/rpcgen
+iolib/
 
 # Artifacts directory (for Antigravity)
 .gemini/
