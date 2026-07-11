@@ -100,7 +100,7 @@ install_deps_debian() {
     # Core build tools
     local PACKAGES=(
         build-essential gcc g++ make cmake git
-        libxml2-dev libssl-dev libpcre3-dev zlib1g-dev
+        libxml2-dev libssl-dev libpcre2-dev zlib1g-dev
         libreadline-dev dos2unix
         libcurl4-openssl-dev libjsoncpp-dev
     )
