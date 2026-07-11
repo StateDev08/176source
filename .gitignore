@@ -23,6 +23,32 @@ core
 
 # Perfect World Specific — built binaries (not source)
 cgame/gs/gs
+*.a
+*.so
+*.depend
+
+# cgame/gs outputs
+cgame/gs/libtask.so
+
+# Generated rpc daemon directories (not tracked source)
+cnet/gdeliveryd/
+cnet/gamedbd/
+cnet/glinkd/
+
+# Generated Makefiles in tracked rpc directories
+cnet/gclient/Makefile
+cnet/gacdclient/Makefile
+cnet/gpanelclient/Makefile
+cnet/licenseservice/Makefile
+cnet/logclient/Makefile
+
+# Generated/copied files in tracked cnet/gfaction
+cnet/gfaction/factiondata.hxx
+cnet/gfaction/ids.hxx
+cnet/gfaction/opresult.hxx
+cnet/gfaction/op*.h
+cnet/gfaction/op*.cxx
+cnet/gfaction/privilege.*
 
 # VS Code / IDE settings
 .vscode/

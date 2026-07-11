@@ -57,14 +57,6 @@ ln -sf "../$SKILL/skill/libskill.a"
 ln -sf "../$NET/gamed/libgsPro2.a"
 ln -sf "../$NET/logclient/liblogCli.a"
 cd "$PROJROOT"
-echo ""
-echo "====================== softlink libskill.so ======================="
-echo ""
-cd "$PROJROOT/$GS/gs"
-rm -f libskill.so
-ln -sf "../../$SKILL/libskill.so"
-cd "$PROJROOT"
-
 buildlicense()
 {
 	echo ""
@@ -72,7 +64,7 @@ buildlicense()
 	echo ""
 	cd "$PROJROOT/$NET/licenseclient"
 	make clean
-	make -j$(nproc)
+	make -j$(nproc) || { cd "$PROJROOT"; return 1; }
 	cd "$PROJROOT"
 }
 
@@ -83,7 +75,7 @@ buildlua()
 	echo ""
 	cd "$PROJROOT/share/lua/src"
 	make clean
-	make -j$(nproc)
+	make -j$(nproc) || { cd "$PROJROOT"; return 1; }
 	cd "$PROJROOT"
 }
 
@@ -93,7 +85,7 @@ buildrpcgen()
 	echo "========================== $NET rpcgen ============================"
 	echo ""
 	cd "$PROJROOT/$NET"
-	./rpcgen rpcalls.xml
+	./rpcgen rpcalls.xml || { cd "$PROJROOT"; return 1; }
 	cd "$PROJROOT"
 }
 
@@ -110,87 +102,124 @@ installfunc()
 	echo ""
 	echo "======================= Installing daemons ========================="
 	echo ""
-	mkdir -p /home/gamed /home/gfactiond /home/gauthd /home/uniquenamed
-	mkdir -p /home/gamedbd /home/gdeliveryd /home/glinkd /home/gacd /home/logservice
+	local failed=0
+	mkdir -p /home/gamed /home/gfactiond /home/gauthd /home/uniquenamed \
+		 /home/gamedbd /home/gdeliveryd /home/glinkd /home/gacd /home/logservice 2>/dev/null || true
 
-	cp "$PROJROOT/$GS/gs/gs"              /home/gamed/gs
-	cp "$PROJROOT/$GS/gs/libtask.so"      /home/gamed/libtask.so
-	cp "$PROJROOT/$SKILL/libskill.so"     /home/gamed/libskill.so
-	cp "$PROJROOT/$NET/gfaction/gfactiond" /home/gfactiond/gfactiond
-	cp "$PROJROOT/$NET/gauthd/gauthd"     /home/gauthd/gauthd
-	cp "$PROJROOT/$NET/uniquenamed/uniquenamed" /home/uniquenamed/uniquenamed
-	cp "$PROJROOT/$NET/gamedbd/gamedbd"   /home/gamedbd/gamedbd
-	cp "$PROJROOT/$NET/gdeliveryd/gdeliveryd" /home/gdeliveryd/gdeliveryd
-	cp "$PROJROOT/$NET/glinkd/glinkd"     /home/glinkd/glinkd
-	cp "$PROJROOT/$NET/gacd/gacd"         /home/gacd/gacd
-	cp "$PROJROOT/$NET/logservice/logservice" /home/logservice/logservice
+	copy_bin() {
+		local src="$1" dst="$2"
+		if [ -f "$src" ]; then
+			if [ -d "$(dirname "$dst")" ]; then
+				cp "$src" "$dst" || failed=1
+			else
+				echo "WARNING: destination dir missing, skipping: $dst"
+			fi
+		else
+			echo "WARNING: binary not found, skipping: $src"
+		fi
+	}
+
+	copy_bin "$PROJROOT/$GS/gs/gs"                  /home/gamed/gs
+	copy_bin "$PROJROOT/$GS/gs/libtask.so"          /home/gamed/libtask.so
+	copy_bin "$PROJROOT/$NET/gfaction/gfactiond"    /home/gfactiond/gfactiond
+	copy_bin "$PROJROOT/$NET/gauthd/gauthd"         /home/gauthd/gauthd
+	copy_bin "$PROJROOT/$NET/uniquenamed/uniquenamed" /home/uniquenamed/uniquenamed
+	copy_bin "$PROJROOT/$NET/gamedbd/gamedbd"       /home/gamedbd/gamedbd
+	copy_bin "$PROJROOT/$NET/gdeliveryd/gdeliveryd" /home/gdeliveryd/gdeliveryd
+	copy_bin "$PROJROOT/$NET/glinkd/glinkd"         /home/glinkd/glinkd
+	copy_bin "$PROJROOT/$NET/gacd/gacd"             /home/gacd/gacd
+	copy_bin "$PROJROOT/$NET/logservice/logservice" /home/logservice/logservice
 	echo ""
-	echo "============================== Success!! ==============================="
+	if [ $failed -eq 0 ]; then
+		echo "============================== Success!! ==============================="
+	else
+		echo "================= WARNING: install completed with errors ==============="
+	fi
 	echo ""
+	return $failed
 }
 
 buildgslib()
 {
+	local failed=0
+	echo ""
+	echo "======================== build libgsio.a =========================="
+	echo ""
+	cd "$PROJROOT/$NET/io"
+	make clean
+	make lib -j$(nproc) || failed=1
+	cd "$PROJROOT"
+	echo ""
 	echo "======================= build liblogCli.a ========================="
 	echo ""
 	cd "$PROJROOT/$NET/logclient"
 	make clean
 	make -f Makefile.gs clean
-	make -f Makefile.gs -j$(nproc)
+	make -f Makefile.gs -j$(nproc) || failed=1
 	cd "$PROJROOT"
 	echo ""
 	echo "======================== build libgsPro2.a ========================="
 	echo ""
 	cd "$PROJROOT/$NET/gamed"
 	make clean
-	make lib -j$(nproc)
+	make lib -j$(nproc) || failed=1
 	cd "$PROJROOT"
 	echo ""
 	echo "======================== build libdbCli.a =========================="
 	echo ""
 	cd "$PROJROOT/$NET/gdbclient"
 	make clean
-	make lib -j$(nproc)
+	make lib -j$(nproc) || failed=1
 	cd "$PROJROOT"
+	echo ""
+	echo "======================== build libcm.a ==========================="
+	echo ""
+	cd "$PROJROOT/$GS/libcm"
+	make clean
+	make -j$(nproc) || failed=1
+	cd "$PROJROOT"
+	echo ""
+	echo "======================== build libTrace.a =========================="
+	echo ""
+	cd "$PROJROOT/$GS/collision"
+	make clean
+	make -j$(nproc) || failed=1
+	cd "$PROJROOT"
+	echo ""
+	echo "======================== setup cgame symlinks =========================="
+	echo ""
+	if [ ! -f "$PROJROOT/share/lua/src/liblua.a" ]; then
+		echo "ERROR: share/lua/src/liblua.a not found. Run buildlua first."
+		exit 1
+	fi
+	ln -sf "$PROJROOT/share/lua/src/liblua.a" "$PROJROOT/$GS/liblua.a"
+	if [ -d "$PROJROOT/$GS/libonline" ] && [ -f "$PROJROOT/$GS/libonline/Makefile" ]; then
+		cd "$PROJROOT/$GS/libonline"
+		make clean
+		make -j$(nproc) || failed=1
+		cd "$PROJROOT"
+	elif [ ! -f "$PROJROOT/$GS/libonline.a" ]; then
+		echo "WARNING: cgame/libonline source not found; creating empty placeholder cgame/libonline.a"
+		ar crs "$PROJROOT/$GS/libonline.a"
+	fi
 	echo ""
 	echo "============================ make libgs ============================"
 	echo ""
-	cd "$PROJROOT/$GS"
-	cd libgs
-	mkdir -p io gs db sk log
-	make
+	cd "$PROJROOT/$GS/libgs"
+	make clean
+	make || failed=1
 	cd "$PROJROOT"
+	return $failed
 }
 
 buildskill()
 {
 	echo ""
-	echo "============================= ant gen =============================="
+	echo "======================== build libskill.a / libskill.so ========================="
 	echo ""
-	cd "$PROJROOT/$SKILL/skill/gen"
-	mkdir -p skills buffcondition
-	ant
-	echo ""
-	echo "========================== gen skills =============================="
-	echo ""
-	chmod a+x gen
-#	./gen
-	echo ""
-	echo "======================= build libskills.o ========================="
-	echo ""
+	cd "$PROJROOT/$SKILL/skill"
 	make clean
-	make -j$(nproc)
-	cd "$PROJROOT"
-}
-
-buildgame()
-{
-	echo ""
-	echo "======================= build cgame ========================="
-	echo ""
-	cd "$PROJROOT/$GS"
-	make clean
-	make -j$(nproc)
+	make -j$(nproc) || { cd "$PROJROOT"; return 1; }
 	cd "$PROJROOT"
 }
 
@@ -201,20 +230,21 @@ buildtask()
 	echo ""
 	cd "$PROJROOT/$GS/gs/task"
 	make clean
-	make lib -j$(nproc)
+	make lib -j$(nproc) || { cd "$PROJROOT"; return 1; }
 	cd "$PROJROOT"
 }
 
 builddeliver()
 {
 	cd "$PROJROOT/$NET"
+	local failed=0
 
 	echo ""
 	echo "========================== build gauthd =============================="
 	echo ""
 	cd gauthd
 	make clean
-	make -j$(nproc)
+	make -j$(nproc) || failed=1
 	cd ..
 
 	echo ""
@@ -222,7 +252,7 @@ builddeliver()
 	echo ""
 	cd logservice
 	make clean
-	make -j$(nproc)
+	make -j$(nproc) || failed=1
 	cd ..
 
 	echo ""
@@ -230,7 +260,7 @@ builddeliver()
 	echo ""
 	cd gacd
 	make clean
-	make -j$(nproc)
+	make -j$(nproc) || failed=1
 	cd ..
 
 	echo ""
@@ -238,7 +268,7 @@ builddeliver()
 	echo ""
 	cd glinkd
 	make clean
-	make -j$(nproc)
+	make -j$(nproc) || failed=1
 	cd ..
 
 	echo ""
@@ -246,7 +276,7 @@ builddeliver()
 	echo ""
 	cd gdeliveryd
 	make clean
-	make -j$(nproc)
+	make -j$(nproc) || failed=1
 	cd ..
 
 	echo ""
@@ -254,7 +284,7 @@ builddeliver()
 	echo ""
 	cd gamedbd
 	make clean
-	make -j$(nproc)
+	make -j$(nproc) || failed=1
 	cd ..
 
 	echo ""
@@ -262,14 +292,14 @@ builddeliver()
 	echo ""
 	cd uniquenamed
 	make clean
-	make -j$(nproc)
+	make -j$(nproc) || failed=1
 	cd ..
 
 	echo ""
 	echo "========================== build libgsio =============================="
 	echo ""
 	cd "$PROJROOT/$NET/io"
-	make lib -j$(nproc)
+	make lib -j$(nproc) || failed=1
 	cd ..
 
 	echo ""
@@ -278,10 +308,11 @@ builddeliver()
 	cd gfaction
 	make clean
 	if [ -d "operations" ]; then cp operations/*.h . 2>/dev/null; cp operations/*.hxx . 2>/dev/null; cp operations/*.cxx . 2>/dev/null; fi
-	make -j$(nproc)
+	make -j$(nproc) || failed=1
 	cd ..
 	
 	cd "$PROJROOT"
+	return $failed
 }
 
 builddeliveryd()
@@ -345,24 +376,28 @@ buildgs()
 	echo ""
 	cd "$PROJROOT/$GS/gs"
 	make clean
-	make -j$(nproc)
+	make -j$(nproc) || { cd "$PROJROOT"; return 1; }
 	cd "$PROJROOT"
 }
 
 rebuilddeliver()
 {
-	buildrpcgen
-	builddeliver
+	buildrpcgen || return 1
+	builddeliver || return 1
 }
 
 rebuilddeliver2()
 {
-	builddeliver
+	builddeliver || return 1
 }
 
 rebuildgs()
 {
-	buildgslib
+	buildlua || return 1
+	buildlicense || return 1
+	buildskill || return 1
+	buildgslib || return 1
+	buildgs || return 1
 }
 
 rebuildall()
@@ -371,14 +406,21 @@ rebuildall()
 	echo "========================== build game all =============================="
 	echo ""
 
-	buildlua
-	buildlicense
-	buildrpcgen
-	buildrpcdata
-	builddeliver
-	buildgslib
-	buildskill
-	buildgame
+	buildlua || return 1
+	buildlicense || return 1
+	buildrpcgen || return 1
+	buildrpcdata || return 1
+	buildskill || return 1
+	buildgslib || return 1
+	buildgs || return 1
+	echo ""
+	echo "======================== build optional deliver daemons ========================="
+	echo ""
+	if builddeliver; then
+		echo "Deliver daemons built successfully."
+	else
+		echo "WARNING: builddeliver failed (some daemons may not be available)."
+	fi
 	installfunc
 }
 
@@ -388,7 +430,7 @@ install()
 	echo "========================== Installing.... =============================="
 	echo ""
 
-	installfunc
+	installfunc || return 1
 }
 
 
