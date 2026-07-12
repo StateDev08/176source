@@ -12,7 +12,7 @@ DEF += -D__USER__=\"$(USER)\"
 
 THREAD = -D_REENTRANT -D_THREAD_SAFE -D_PTHREADS
 THREADLIB = -lpthread
-PCRELIB = -lpcre
+PCRELIB = -lpcre2-8
 ALLLIB = $(THREADLIB) $(PCRELIB) -lssl -lcrypto -lstdc++ -ldl -lcurl -ljsoncpp -lmysqlpp -lmysqlclient -lz -lm
 
 CSTD = -std=c18
