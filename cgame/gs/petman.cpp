@@ -1764,7 +1764,7 @@ bool pet_manager::PetBuySkinInc(gplayer_imp * pImp, int index, int pos_data)
 	int new_pet_tid = 0;
 	int pet_skin_master = 0;
 	
-	int table_pos_data[] = { 0,3,6,14,30,62,126,254,510,1022,2046,4094,8190,16382,32768,65538,131078,262158,524318,1048638,2097278,4194558,8389118,16778238,33556478,67112958,134225918,268451838,536903678,1073807358,2147614718,4295229438,8590458878 };
+	unsigned long long table_pos_data[] = { 0,3,6,14,30,62,126,254,510,1022,2046,4094,8190,16382,32768,65538,131078,262158,524318,1048638,2097278,4194558,8389118,16778238,33556478,67112958,134225918,268451838,536903678,1073807358,2147614718,4295229438,8590458878 };
 	int list_config[] = { 6491, 6501, 6502, 6503, 0 }; //Lista de ID do elements.data (pet_skin_config)
 	int list_count = 5;
 
@@ -1825,7 +1825,7 @@ bool pet_manager::PetBuySkinInc(gplayer_imp * pImp, int index, int pos_data)
 		pImp->_runner->player_cash(pImp->GetMallCash());
 
 		pImp->SetPetSkinStorage(pet_skin_master, index);
-		pImp->SetPetSkinStoragePos(table_pos_data[pos_data], index);
+		pImp->SetPetSkinStoragePos((int)table_pos_data[pos_data], index);
 		pImp->SetPetSkinStorageBuy(pos_data, index);
 
 		if(!RebuildStorage(pImp))
