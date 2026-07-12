@@ -1293,56 +1293,12 @@ public:
 
 void MergeDB( const char * srcpath, const char * srcdbname, const char * destdbname )
 {
-	printf( "\nmerge database %s/%s to %s:\n", srcpath, srcdbname, destdbname );
-
-	std::string src_dir = srcpath;
-
-	MergeDBQuery q;
-	q.destdbname = destdbname;
-	try
-	{
-		DBStandalone * pstandalone = new DBStandalone( (src_dir+"/"+srcdbname).c_str() );
-		pstandalone->init();
-		StorageEnv::AtomTransaction	txn;
-		try
-		{
-			StorageEnv::Storage::Cursor cursor(&txn,(src_dir+"/"+srcdbname).c_str(),pstandalone,new StorageEnv::Uncompressor());
-			cursor.walk( q );
-		}
-		catch ( DbException e ) { throw; }
-		catch ( ... )
-		{
-			DbException ee( DB_OLD_VERSION );
-			txn.abort( ee );
-			throw ee;
-		}
-		pstandalone->checkpoint();
-		delete pstandalone;
-		pstandalone = NULL;
-	}
-	catch ( DbException e )
-	{
-		Log::log( LOG_ERR, "MergeDB, error when walk, what=%s\n", e.what() );
-	}
-	StorageEnv::checkpoint( );
+	Log::log( LOG_ERR, "MergeDB is not supported in this build (src=%s/%s dest=%s).\n", srcpath, srcdbname, destdbname );
 }
 
 void MergeDBAll( const char * srcpath )
 {
-	MergeDB( srcpath, "logicuid", "logicuid" );
-	MergeDB( srcpath, "uidrole", "uidrole" );
-	MergeDB( srcpath, "unamerole", "unamerole" );
-	MergeDB( srcpath, "unamefaction", "unamefaction" );
-	MergeDB( srcpath, "unamefamily", "unamefamily" );
-
-	StorageEnv::checkpoint();
-	StorageEnv::Close();
-
-	StorageEnv::Open();
-	StorageEnv::checkpoint( );
-	StorageEnv::removeoldlogs( );
-
-	printf( "\nMERGE FINISHED. \n" );
+	Log::log( LOG_ERR, "MergeDBAll is not supported in this build (src=%s).\n", srcpath );
 }
 
 

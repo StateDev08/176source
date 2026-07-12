@@ -94,6 +94,7 @@ public:
 	Data *result;
 	XID  xid;
 	Timer timer;
+	void* _callback;
 
 public:
 	~Rpc ()
@@ -101,8 +102,8 @@ public:
 		argument->Destroy();
 		result->Destroy();
 	}
-	Rpc(Type type, Data *arg, Data *res) : Protocol(type), argument(arg), result(res) { }
-	Rpc(const Rpc &rhs) : Protocol(rhs), argument(rhs.argument->Clone()), result(rhs.result->Clone()), xid(rhs.xid) { }
+	Rpc(Type type, Data *arg, Data *res) : Protocol(type), argument(arg), result(res), _callback(NULL) { }
+	Rpc(const Rpc &rhs) : Protocol(rhs), argument(rhs.argument->Clone()), result(rhs.result->Clone()), xid(rhs.xid), _callback(rhs._callback) { }
 	OctetsStream& marshal(OctetsStream &os) const
 	{
 		return os << xid << (xid.IsRequest() ? *argument : *result); 

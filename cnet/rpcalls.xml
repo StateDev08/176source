@@ -3698,7 +3698,7 @@
 		<variable name="pocket1" type="GRolePocket"/>
 		<variable name="pocket2" type="GRolePocket"/>
 	</rpcdata>
-	<rpc debug="0" name="TradeInventory" type="3020" argument="TradeInventoryArg" result="TradeInventoryRes" table="inventory" attr="get" retcode="retcode" value="goods1" maxsize="131072" prior="1" timeout="10"/>
+	<rpc debug="0" name="TradeInventory" type="3020" argument="TradeInventoryArg" result="TradeInventoryRes" table="inventory" attr="get" retcode="retcode" value="pocket1" maxsize="131072" prior="1" timeout="10"/>
 
 	<rpcdata name="TradeSaveArg">
 		<variable name="roleid1" type="unsigned int" default="0"/>
@@ -3711,7 +3711,7 @@
 	<rpcdata name="TradeSaveRes">
 		<variable name="retcode" type="int" default="-1"/>
 	</rpcdata>
-	<rpc debug="0" name="TradeSave" type="3021" argument="TradeSaveArg" result="TradeSaveRes" table="inventory" attr="put" key="roleid1" value="sellgoods1" maxsize="16384" prior="1" timeout="20"/>
+	<rpc debug="0" name="TradeSave" type="3021" argument="TradeSaveArg" result="TradeSaveRes" table="inventory" attr="put" key="roleid1" value="goods1" maxsize="16384" prior="1" timeout="20"/>
 
 	<rpcdata name="GetMoneyInventoryArg">
 		<variable name="roleid" type="int" default="-1"/>
@@ -13344,9 +13344,9 @@
 		<protocol ref="ChatMessage"/>
 		<protocol ref="WorldChat"/>
 
-		<rpc ref="AddFriendRqst" baseclass="ProxyRpc" sendmanager="GLinkServer"/>
-		<rpc ref="TradeStartRqst" baseclass="ProxyRpc" sendmanager="GLinkServer"/>
-		<rpc ref="FactionInviteJoin" baseclass="ProxyRpc" sendmanager="GLinkServer"/>
+		<rpc ref="AddFriendRqst" baseclass="ProxyRpc" sendmanager="GDeliveryClient"/>
+		<rpc ref="TradeStartRqst" baseclass="ProxyRpc" sendmanager="GDeliveryClient"/>
+		<rpc ref="FactionInviteJoin" baseclass="ProxyRpc" sendmanager="GFactionClient"/>
 		<protocol ref="AnnounceNewMail"/>
 
 		<!-- anti-cheat related protocols -->
@@ -13359,7 +13359,7 @@
 		<protocol ref="MatrixFailure"/>
 
 		<!-- reset player pos -->
-		<rpc ref="PlayerPositionResetRqst" baseclass="ProxyRpc" sendmanager="GLinkServer"/>
+		<rpc ref="PlayerPositionResetRqst" baseclass="ProxyRpc" sendmanager="GDeliveryClient"/>
 		
 		<!-- cross server related -->
 		<protocol ref="AnnounceLinkVersion"/>

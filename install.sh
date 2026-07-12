@@ -103,6 +103,7 @@ install_deps_debian() {
         libxml2-dev libssl-dev libpcre2-dev zlib1g-dev
         libreadline-dev dos2unix
         libcurl4-openssl-dev libjsoncpp-dev
+        libdb5.3++-dev
     )
 
     # Perl XML (for rpcgen)
@@ -200,6 +201,15 @@ install_deps_rhel() {
         PACKAGES+=(perl-XML-DOM)
     else
         log_warn "perl-XML-DOM not found. rpcgen may not work. Try: cpan XML::DOM"
+    fi
+
+    # Berkeley DB C++ headers (used by uniquenamed/gamedbd)
+    if $PKG_MGR list available libdb-cxx-devel &>/dev/null 2>&1; then
+        PACKAGES+=(libdb-cxx-devel libdb-devel)
+    elif $PKG_MGR list available libdb-devel &>/dev/null 2>&1; then
+        PACKAGES+=(libdb-devel)
+    else
+        log_warn "Berkeley DB devel not found. uniquenamed/gamedbd may not build."
     fi
 
     $PKG_MGR install -y "${PACKAGES[@]}"
