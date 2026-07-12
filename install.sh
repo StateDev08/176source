@@ -3,7 +3,7 @@
 # Universal Install Script for Perfect World 1.7.6 Server
 #
 # Supported distributions:
-#   - Ubuntu 24.04 / 25.04
+#   - Ubuntu 24.04 / 25.04 / 26.04
 #   - Debian 11 (Bullseye) / 12 (Bookworm) / 13 (Trixie)
 #   - CentOS Stream 9 / Rocky Linux 9 / AlmaLinux 9 / RHEL 9
 #
@@ -46,7 +46,7 @@ for arg in "$@"; do
             echo "  --deps-only   Only install system dependencies (skip build)"
             echo "  --build-only  Only run the build (skip dependency installation)"
             echo ""
-            echo "Supported: Ubuntu 24/25, Debian 11/12/13, CentOS/Rocky/Alma 9"
+            echo "Supported: Ubuntu 24/25/26, Debian 11/12/13, CentOS/Rocky/Alma 9"
             exit 0
             ;;
     esac
@@ -97,6 +97,11 @@ install_deps_debian() {
 
     apt-get update -qq
 
+    # MySQL++ is in Ubuntu universe; ensure it is enabled before searching
+    if [ "$DISTRO_ID" = "ubuntu" ]; then
+        ensure_ubuntu_universe
+    fi
+
     # Core build tools
     local PACKAGES=(
         build-essential gcc g++ make cmake git
@@ -109,30 +114,53 @@ install_deps_debian() {
     # Perl XML (for rpcgen)
     PACKAGES+=(libxml-dom-perl)
 
-    # MariaDB/MySQL client headers + MySQL++ wrapper
-    # Debian 11+ and Ubuntu 22.04+ use libmariadb-dev-compat for MySQL compatibility
-    if apt-cache show libmariadb-dev-compat &>/dev/null; then
-        PACKAGES+=(libmariadb-dev-compat libmariadb-dev)
+    # MariaDB/MySQL client headers (mysql.h, libmysqlclient.so)
+    # Prefer the generic metapackage, then distro-specific implementations.
+    if apt-cache show default-libmysqlclient-dev &>/dev/null; then
+        PACKAGES+=(default-libmysqlclient-dev)
     elif apt-cache show libmysqlclient-dev &>/dev/null; then
         PACKAGES+=(libmysqlclient-dev)
-    elif apt-cache show default-libmysqlclient-dev &>/dev/null; then
-        PACKAGES+=(default-libmysqlclient-dev)
+    elif apt-cache show libmariadb-dev-compat &>/dev/null; then
+        PACKAGES+=(libmariadb-dev-compat libmariadb-dev)
     else
-        log_warn "Could not find MySQL/MariaDB dev package. You may need to install it manually."
+        log_warn "Could not find MySQL/MariaDB client dev package. You may need to install it manually."
     fi
 
-    # MySQL++ wrapper (used by cgame/gs/gmysql_manager.cpp)
+    # MySQL++ wrapper (mysql++.h, libmysqlpp.so)
     if apt-cache show libmysql++-dev &>/dev/null; then
         PACKAGES+=(libmysql++-dev)
-    elif apt-cache show libmysql++3v5 &>/dev/null; then
-        PACKAGES+=(libmysql++3v5)
     else
-        log_warn "Could not find MySQL++ dev package. You may need to install it manually."
+        log_warn "Could not find libmysql++-dev. cgame/gs/gmysql_manager.cpp will not build."
     fi
 
     apt-get install -y --no-install-recommends "${PACKAGES[@]}"
 
+    # Some Debian/Ubuntu variants install MariaDB headers under /usr/include/mariadb
+    # only; create the /usr/include/mysql symlink expected by the build.
+    if [ -d "/usr/include/mariadb" ] && [ ! -d "/usr/include/mysql" ]; then
+        log_info "Creating /usr/include/mysql -> /usr/include/mariadb symlink..."
+        ln -sf /usr/include/mariadb /usr/include/mysql
+    fi
+
     log_info "apt dependencies installed."
+}
+
+# ─── Enable Ubuntu universe repository if libmysql++-dev is not in apt cache ───
+ensure_ubuntu_universe() {
+    if apt-cache show libmysql++-dev >/dev/null 2>&1; then
+        return 0
+    fi
+
+    log_warn "libmysql++-dev not found in apt cache; enabling Ubuntu universe repository..."
+
+    if apt-get install -y --no-install-recommends software-properties-common; then
+        if add-apt-repository -y universe; then
+            apt-get update -qq
+            return 0
+        fi
+    fi
+
+    log_warn "Could not enable universe repository. You may need to run: add-apt-repository universe"
 }
 
 # ─── Install Dependencies (RHEL/CentOS/Rocky/Alma) ───────────────────────────
@@ -250,7 +278,24 @@ verify_toolchain() {
     if [ -f "/usr/include/mysql/mysql.h" ] || [ -f "/usr/include/mariadb/mysql.h" ]; then
         log_info "MySQL/MariaDB headers: found"
     else
-        log_warn "MySQL/MariaDB headers not found at expected location."
+        log_error "MySQL/MariaDB headers not found at expected location."
+        ERRORS=1
+    fi
+
+    # Check mysql++.h (used by cgame/gs/gmysql_manager.cpp)
+    if [ -f "/usr/include/mysql++/mysql++.h" ]; then
+        log_info "MySQL++ headers: found"
+    else
+        log_error "MySQL++ headers (mysql++.h) not found. Install libmysql++-dev."
+        ERRORS=1
+    fi
+
+    # Check Berkeley DB C++ headers (used by gamedbd/uniquenamed)
+    if [ -f "/usr/include/db_cxx.h" ]; then
+        log_info "Berkeley DB C++ headers: found"
+    else
+        log_error "Berkeley DB C++ headers (db_cxx.h) not found. Install libdb5.3++-dev."
+        ERRORS=1
     fi
 
     # Check OpenSSL
