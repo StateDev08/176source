@@ -149,13 +149,19 @@ installfunc()
 	copy_bin_optional "$PROJROOT/$NET/uniquenamed/uniquenamed" /home/uniquenamed/uniquenamed
 	copy_bin_optional "$PROJROOT/$NET/gamedbd/gamedbd"       /home/gamedbd/gamedbd
 	copy_bin_optional "$PROJROOT/$NET/gdeliveryd/gdeliveryd" /home/gdeliveryd/gdeliveryd
-	# cnet/glinkd is a generated stub (empty Process/OnAddSession). Do not overwrite
-	# a real glinkd binary from the pwserver package with it.
-	if [ -f "$PROJROOT/$NET/glinkd/glinkd" ]; then
-		if [ -f /home/glinkd/glinkd ]; then
-			echo "WARNING: preserving existing /home/glinkd/glinkd (cnet/glinkd is a source stub)"
-		elif cp "$PROJROOT/$NET/glinkd/glinkd" /home/glinkd/glinkd 2>/dev/null; then
-			echo "WARNING: installed /home/glinkd/glinkd from cnet/glinkd; the generated stub cannot route game data"
+	# Install the glinkd license-bypass wrapper. If a real glinkd ELF binary is
+	# already present, preserve it as glinkd.real and install the wrapper as glinkd.
+	if [ -f "$SHARE/glinkd-wrapper/glinkd" ] && [ -f "$SHARE/glinkd-wrapper/glinkd_init_patch.so" ]; then
+		if [ -d /home/glinkd ]; then
+			if [ -f /home/glinkd/glinkd ]; then
+				if head -c 4 /home/glinkd/glinkd | grep -q 'ELF'; then
+					cp -n /home/glinkd/glinkd /home/glinkd/glinkd.real 2>/dev/null || true
+					echo "WARNING: preserved real glinkd binary as /home/glinkd/glinkd.real"
+				fi
+			fi
+			cp -f "$SHARE/glinkd-wrapper/glinkd" /home/glinkd/glinkd || true
+			cp -f "$SHARE/glinkd-wrapper/glinkd_init_patch.so" /home/glinkd/glinkd_init_patch.so || true
+			echo "installed /home/glinkd/glinkd (wrapper) and /home/glinkd/glinkd_init_patch.so"
 		fi
 	fi
 	copy_bin_optional "$PROJROOT/$NET/gacd/gacd"             /home/gacd/gacd
@@ -301,12 +307,12 @@ builddeliver()
 	cd ..
 
 	echo ""
-	echo "========================== build glinkd =============================="
+	echo "========================== build glinkd wrapper =============================="
 	echo ""
-	cd glinkd
+	cd "$SHARE/glinkd-wrapper"
 	make clean
 	make -j$(nproc) || failed=1
-	cd ..
+	cd "$PROJROOT/$NET"
 
 	echo ""
 	echo "========================== build gdeliveryd =============================="
