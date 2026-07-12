@@ -2,6 +2,7 @@
 #define __SKILL_SKILLWRAPPER_H
 
 #include <map>
+#include <unordered_map>
 #include <vector>
 #include <list>
 
