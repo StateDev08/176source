@@ -1,6 +1,7 @@
 #ifndef __ONLINEGAME_GS_TITLE_MANAGER_H__
 #define __ONLINEGAME_GS_TITLE_MANAGER_H__
 #include <hashtab.h>
+#include <vector>
 #include <unordered_map>
 #include <amemory.h>
 
