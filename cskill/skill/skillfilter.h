@@ -2,6 +2,7 @@
 #define __SKILL_FILTER_H__
 
 #include <climits>
+#include <ctime>
 #include <common/types.h>
 #include <obj_interface.h>
 #include <filter.h>
