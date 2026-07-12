@@ -24,7 +24,7 @@ LICENSE_OBJ = $(LIC_DIR)/LicenseCli.a
 all: 	gs
 
 gs:	$(BASEOBJ) $(GSOBJ) $(INOBJ) $(SUBOBJ) libtask.so
-	$(LD) -fPIC $(BASEOBJ) $(INOBJ) $(GSOBJ) $(SUBOBJ) $(CMLIB) $(LICENSE_OBJ) libtask.so $(ALLLIB) -o gs
+	$(LD) -fPIC -Wl,-rpath,'$$ORIGIN' $(BASEOBJ) $(INOBJ) $(GSOBJ) $(SUBOBJ) $(CMLIB) $(LICENSE_OBJ) libtask.so $(ALLLIB) -o gs
 
 	@echo "Build complete: gs"
 	@echo "Run 'make install' to copy binaries to /home/gamed/"
