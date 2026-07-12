@@ -5,6 +5,7 @@
 #include "rpcdefs.h"
 #include "callid.hxx"
 #include "state.hxx"
+#include "storage.h"
 
 
 namespace GNET

@@ -85,6 +85,13 @@ buildrpcgen()
 	echo "========================== $NET rpcgen ============================"
 	echo ""
 	cd "$PROJROOT/$NET"
+	# Remove fully generated daemon directories so rpcgen recreates them with
+	# current attributes (uniquenamed/gfaction/gauthd/logservice/gacd contain
+	# custom source files and must not be removed)
+	rm -rf glinkd gdeliveryd gamedbd
+	# gdbclient is a tracked directory with custom db_if.cpp/db_if.h/db_os.h/Makefile;
+	# its generated .hrp files become stale when rpcdata/attributes change.
+	rm -f gdbclient/*.hrp
 	./rpcgen rpcalls.xml || { cd "$PROJROOT"; return 1; }
 	cd "$PROJROOT"
 }
@@ -108,32 +115,54 @@ installfunc()
 
 	copy_bin() {
 		local src="$1" dst="$2"
-		if [ -f "$src" ]; then
-			if [ -d "$(dirname "$dst")" ]; then
-				cp "$src" "$dst" || failed=1
-			else
-				echo "WARNING: destination dir missing, skipping: $dst"
-			fi
+		if [ ! -f "$src" ]; then
+			echo "ERROR: required binary not found: $src"
+			failed=1
+			return
+		fi
+		mkdir -p "$(dirname "$dst")" 2>/dev/null || true
+		if [ -d "$(dirname "$dst")" ]; then
+			cp "$src" "$dst" || failed=1
 		else
-			echo "WARNING: binary not found, skipping: $src"
+			echo "WARNING: cannot create install dir for $dst; skipping $src"
+		fi
+	}
+
+	copy_bin_optional() {
+		local src="$1" dst="$2"
+		if [ ! -f "$src" ]; then
+			echo "WARNING: optional binary not found, skipping: $src"
+			return
+		fi
+		mkdir -p "$(dirname "$dst")" 2>/dev/null || true
+		if [ -d "$(dirname "$dst")" ]; then
+			cp "$src" "$dst" || true
+		else
+			echo "WARNING: cannot create install dir for $dst; skipping $src"
 		fi
 	}
 
 	copy_bin "$PROJROOT/$GS/gs/gs"                  /home/gamed/gs
 	copy_bin "$PROJROOT/$GS/gs/libtask.so"          /home/gamed/libtask.so
-	copy_bin "$PROJROOT/$NET/gfaction/gfactiond"    /home/gfactiond/gfactiond
-	copy_bin "$PROJROOT/$NET/gauthd/gauthd"         /home/gauthd/gauthd
-	copy_bin "$PROJROOT/$NET/uniquenamed/uniquenamed" /home/uniquenamed/uniquenamed
-	copy_bin "$PROJROOT/$NET/gamedbd/gamedbd"       /home/gamedbd/gamedbd
-	copy_bin "$PROJROOT/$NET/gdeliveryd/gdeliveryd" /home/gdeliveryd/gdeliveryd
-	copy_bin "$PROJROOT/$NET/glinkd/glinkd"         /home/glinkd/glinkd
-	copy_bin "$PROJROOT/$NET/gacd/gacd"             /home/gacd/gacd
-	copy_bin "$PROJROOT/$NET/logservice/logservice" /home/logservice/logservice
+	copy_bin_optional "$PROJROOT/$NET/gfaction/gfactiond"    /home/gfactiond/gfactiond
+	copy_bin_optional "$PROJROOT/$NET/gauthd/gauthd"         /home/gauthd/gauthd
+	copy_bin_optional "$PROJROOT/$NET/uniquenamed/uniquenamed" /home/uniquenamed/uniquenamed
+	copy_bin_optional "$PROJROOT/$NET/gamedbd/gamedbd"       /home/gamedbd/gamedbd
+	copy_bin_optional "$PROJROOT/$NET/gdeliveryd/gdeliveryd" /home/gdeliveryd/gdeliveryd
+	copy_bin_optional "$PROJROOT/$NET/glinkd/glinkd"         /home/glinkd/glinkd
+	copy_bin_optional "$PROJROOT/$NET/gacd/gacd"             /home/gacd/gacd
+	copy_bin_optional "$PROJROOT/$NET/logservice/logservice" /home/logservice/logservice
 	echo ""
 	if [ $failed -eq 0 ]; then
-		echo "============================== Success!! ==============================="
+		if [ -d /home/gamed ]; then
+			echo "============================== Success!! ==============================="
+		else
+			echo "============================== Build Success!! ==============================="
+			echo "(Install to /home/* was skipped because those directories are not writable."
+			echo " Run as root or run install.sh first if you want to install the binaries.)"
+		fi
 	else
-		echo "================= WARNING: install completed with errors ==============="
+		echo "================= ERROR: install failed (required binary missing) ==============="
 	fi
 	echo ""
 	return $failed
@@ -307,7 +336,7 @@ builddeliver()
 	echo ""
 	cd gfaction
 	make clean
-	if [ -d "operations" ]; then cp operations/*.h . 2>/dev/null; cp operations/*.hxx . 2>/dev/null; cp operations/*.cxx . 2>/dev/null; fi
+	if [ -d "operations" ]; then cp operations/*.h . 2>/dev/null; cp operations/*.hxx . 2>/dev/null; cp operations/*.cxx . 2>/dev/null; cp operations/*.inl . 2>/dev/null; fi
 	make -j$(nproc) || failed=1
 	cd ..
 	
@@ -354,6 +383,7 @@ builddeliveryd()
 	echo ""
 	cd gfaction
 	make clean
+	if [ -d "operations" ]; then cp operations/*.h . 2>/dev/null; cp operations/*.hxx . 2>/dev/null; cp operations/*.cxx . 2>/dev/null; cp operations/*.inl . 2>/dev/null; fi
 	make -j$(nproc)
 	cd ..
 

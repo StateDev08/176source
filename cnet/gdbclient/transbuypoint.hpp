@@ -5,7 +5,9 @@
 #include "rpcdefs.h"
 #include "callid.hxx"
 #include "state.hxx"
+
 #include "transid"
+#include "sellid"
 
 namespace GNET
 {

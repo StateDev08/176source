@@ -48,7 +48,12 @@ cnet/gfaction/ids.hxx
 cnet/gfaction/opresult.hxx
 cnet/gfaction/op*.h
 cnet/gfaction/op*.cxx
+cnet/gfaction/op*.inl
 cnet/gfaction/privilege.*
+cnet/gfaction/gfactiond
+
+# Generated RPC stub files in tracked cnet/gdbclient
+cnet/gdbclient/*.hrp
 
 # VS Code / IDE settings
 .vscode/

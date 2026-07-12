@@ -760,6 +760,8 @@ sub generate_service
 			if( $name eq 'rpc' )
 			{
 				my $temp = find_ref_node($rpc_nodes, $_->getAttribute('ref'));
+				$temp->setAttribute('baseclass',$_->getAttribute('baseclass')) if $temp;
+				$temp->setAttribute('sendmanager',$_->getAttribute('sendmanager')) if $temp;
 				push(@rpc_subset, $temp) if( $temp and not is_exists(\@rpc_subset, $temp) );
 			}
 		}
@@ -1080,10 +1082,11 @@ EOF
 	}
 }
 
-sub generate_rpcdata_include_type 
+sub generate_rpcdata_include_type
 {
         my $type = shift;
         my $content = "";
+        $type =~ s/^\s+|\s+$//g;
 
         my $rpcdata = find_ref_node( \@rpcdata_nodes, $type);
         if ($rpcdata)
@@ -1095,12 +1098,14 @@ sub generate_rpcdata_include_type
         if ($pos == 0)
         {
                 $type = substr($type, 12, length($type) - 13);
+                $type =~ s/^\s+|\s+$//g;
                 return generate_rpcdata_include_type($type);
         }
         $pos = rindex($type, "Vector");
         if ($pos == length($type) - 6)
         {
                 $type = substr($type, 0, length($type) - 6);
+                $type =~ s/^\s+|\s+$//g;
                 return generate_rpcdata_include_type($type);
         }
         return $content;
