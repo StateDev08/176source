@@ -105,13 +105,10 @@ install_deps_debian() {
         libcurl4-openssl-dev libjsoncpp-dev
     )
 
-    # Java + Ant (for cskill build)
-    PACKAGES+=(ant default-jdk)
-
     # Perl XML (for rpcgen)
     PACKAGES+=(libxml-dom-perl)
 
-    # MariaDB client headers
+    # MariaDB/MySQL client headers + MySQL++ wrapper
     # Debian 11+ and Ubuntu 22.04+ use libmariadb-dev-compat for MySQL compatibility
     if apt-cache show libmariadb-dev-compat &>/dev/null; then
         PACKAGES+=(libmariadb-dev-compat libmariadb-dev)
@@ -121,6 +118,15 @@ install_deps_debian() {
         PACKAGES+=(default-libmysqlclient-dev)
     else
         log_warn "Could not find MySQL/MariaDB dev package. You may need to install it manually."
+    fi
+
+    # MySQL++ wrapper (used by cgame/gs/gmysql_manager.cpp)
+    if apt-cache show libmysql++-dev &>/dev/null; then
+        PACKAGES+=(libmysql++-dev)
+    elif apt-cache show libmysql++3v5 &>/dev/null; then
+        PACKAGES+=(libmysql++3v5)
+    else
+        log_warn "Could not find MySQL++ dev package. You may need to install it manually."
     fi
 
     # PCRE: Debian 13+ / Ubuntu 25+ may only have libpcre2-dev
@@ -171,7 +177,7 @@ install_deps_rhel() {
         libcurl-devel jsoncpp-devel
     )
 
-    # MariaDB client headers
+    # MariaDB/MySQL client headers
     if $PKG_MGR list available mariadb-devel &>/dev/null 2>&1; then
         PACKAGES+=(mariadb-devel)
     elif $PKG_MGR list available mysql-devel &>/dev/null 2>&1; then
@@ -182,12 +188,11 @@ install_deps_rhel() {
         log_warn "Could not find MySQL/MariaDB devel package. You may need to install it manually."
     fi
 
-    # Java + Ant
-    PACKAGES+=(java-17-openjdk-devel)
-    if $PKG_MGR list available ant &>/dev/null 2>&1; then
-        PACKAGES+=(ant)
+    # MySQL++ wrapper (used by cgame/gs/gmysql_manager.cpp)
+    if $PKG_MGR list available mysql++-devel &>/dev/null 2>&1; then
+        PACKAGES+=(mysql++-devel)
     else
-        log_warn "Apache Ant not found in repos. Install manually or skip cskill build."
+        log_warn "MySQL++ devel not found. You may need to install it manually."
     fi
 
     # Perl XML::DOM
@@ -302,7 +307,9 @@ fix_permissions() {
 
     chmod +x build.sh
     [ -f "share/rpcgen" ] && chmod +x share/rpcgen
+    [ -f "share/rpc/rpcgen.pl" ] && chmod +x share/rpc/rpcgen.pl
     [ -f "share/rpc/xmlcoder.pl" ] && chmod +x share/rpc/xmlcoder.pl
+    [ -f "share/rpc/xmlversion.pl" ] && chmod +x share/rpc/xmlversion.pl
 
     log_info "Permissions fixed."
 }

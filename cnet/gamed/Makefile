@@ -7,7 +7,12 @@ DEBUG_VERSION = false
 include ../mk/gcc.defs.mk
 
 DEFINES += -DUSE_LOGCLIENT -O0
-INCLUDES += -I../storage -I../include -I../gdbclient
+INCLUDES += -I../storage -I../include -I../gdbclient \
+            -I$(TOP_SRCDIR)/common \
+            -I$(TOP_SRCDIR)/../cgame \
+            -I$(TOP_SRCDIR)/../cgame/gs \
+            -I$(TOP_SRCDIR)/../cgame/include \
+            -I$(TOP_SRCDIR)/../cgame/libcm
 
 OBJS = auctionsyslib.o factionlib.o gamed.o gmattr.o gproviderclient.o gsp_if.o \
        kingelectionsyslib.o mailsyslib.o pshopsyslib.o sellpointlib.o stocklib.o \

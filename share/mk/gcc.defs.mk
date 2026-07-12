@@ -14,7 +14,7 @@ LUA_DIR = $(TOP_SRCDIR)/lua
 INCLUDES = -I. -I$(TOP_SRCDIR) -I$(LUA_DIR)/src -I$(LUA_DIR)/LuaBridge -I$(LUA_DIR)/LuaBridge/detail -I$(IO_DIR) -I$(CO_DIR) -I$(LIC_DIR) -I$(TOP_SRCDIR)/rpc -I$(TOP_SRCDIR)/inl -I$(TOP_SRCDIR)/rpcdata -I/usr/include/libxml2 -I../iolib/inc -I/usr/include/openssl
 
 SHARESRC = $(IO_DIR)/pollio.cpp $(IO_DIR)/protocol.cpp $(IO_DIR)/security.cpp $(IO_DIR)/rpc.cpp $(IO_DIR)/proxyrpc.cpp $(IO_DIR)/base64.cpp $(IO_DIR)/utf.cpp $(IO_DIR)/beaktrace.cpp \
-			$(CO_DIR)/thread.cpp $(CO_DIR)/conf.cpp $(CO_DIR)/timer.cpp $(CO_DIR)/itimer.cpp $(CO_DIR)/octets.cpp $(IO_DIR)/luabase.cpp $(IO_DIR)/crypt.cpp
+			$(CO_DIR)/thread.cpp $(CO_DIR)/conf.cpp $(CO_DIR)/timer.cpp $(CO_DIR)/itimer.cpp $(CO_DIR)/octets.cpp $(CO_DIR)/matcher.cpp $(IO_DIR)/luabase.cpp $(IO_DIR)/crypt.cpp
 
 LOGSRC  = $(LOG_DIR)/logclientclient.cpp $(LOG_DIR)/logclienttcpclient.cpp $(LOG_DIR)/log.cpp $(LOG_DIR)/glog.cpp
 LOGSTUBSRC = $(LOG_DIR)/stubs.cxx $(LOG_DIR)/state.cxx
