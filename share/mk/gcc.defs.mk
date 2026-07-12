@@ -19,7 +19,7 @@ SHARESRC = $(IO_DIR)/pollio.cpp $(IO_DIR)/protocol.cpp $(IO_DIR)/security.cpp $(
 LOGSRC  = $(LOG_DIR)/logclientclient.cpp $(LOG_DIR)/logclienttcpclient.cpp $(LOG_DIR)/log.cpp $(LOG_DIR)/glog.cpp
 LOGSTUBSRC = $(LOG_DIR)/stubs.cxx $(LOG_DIR)/state.cxx
 
-SHARE_SOBJ = -lssl $(LUA_DIR)/src/liblua.a -ldb_cxx -lpcre -ldl
+SHARE_SOBJ = -lssl $(LUA_DIR)/src/liblua.a -ldb_cxx -lpcre2-8 -ldl
 LICENSE_SOBJ = $(LIC_DIR)/LicenseCli.a
 
 ifeq ($(SINGLE_THREAD),true)

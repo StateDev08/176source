@@ -20,7 +20,7 @@ all : lib
 logclient : $(OBJS) $(SHAREOBJ) $(SHARE_SOBJ)
 	$(LD) $(LDFLAGS) -o $@ $(OBJS) $(SHAREOBJ) $(SHARE_SOBJ) 
 
-lib: $(LIBOBJS) $(SHAREOBJ) $(SHARE_SOBJ)
+lib: $(LIBOBJS) $(SHAREOBJ)
 	rm ./liblogCli.a -f
 	$(AR) crs ./liblogCli.a $(LIBOBJS)
 

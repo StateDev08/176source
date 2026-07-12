@@ -6,11 +6,8 @@
 #include <fstream>
 #include <sstream>
 
-#if __GNUC__ <4
-	#include <pcre/pcre.h>
-#else
-	#include <pcre.h>
-#endif
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 
 #include "thread.h"
 
@@ -27,7 +24,8 @@ namespace GNET
 		char errormsg[128];
 
 		string pattern;
-		pcre *regexp;
+		pcre2_code *regexp;
+		pcre2_match_data *match_data;
 
 		void close()
 		{
@@ -35,15 +33,18 @@ namespace GNET
 				iconv_close(cinput);
 			if(cvalid!=CDINVALID)
 				iconv_close(cvalid);
+			if(match_data)
+				pcre2_match_data_free(match_data);
 			if(regexp)
-				pcre_free(regexp);
+				pcre2_code_free(regexp);
 			cinput = CDINVALID;
 			cvalid = CDINVALID;
+			match_data = NULL;
 			regexp = NULL;
 		}
 
 	public:
-		Matcher() : locker("Matcher"), cinput(CDINVALID), cvalid(CDINVALID), regexp(NULL)
+		Matcher() : locker("Matcher"), cinput(CDINVALID), cvalid(CDINVALID), regexp(NULL), match_data(NULL)
 		{
 			errormsg[0] = 0;
 		}
@@ -148,16 +149,17 @@ namespace GNET
 
 				if(pattern.size()>0)
 				{
-					const char *error;
-					int erroffset;
+					int errornumber;
+					PCRE2_SIZE erroroffset;
 					ilen = pattern.size()-1;
 					pattern.assign(pattern.c_str(), ilen);
-					regexp = pcre_compile(pattern.c_str(),PCRE_CASELESS|PCRE_UTF8,&error,&erroffset,0); 
+					regexp = pcre2_compile((PCRE2_SPTR)pattern.c_str(), (PCRE2_SIZE)pattern.size(), PCRE2_CASELESS|PCRE2_UTF, &errornumber, &erroroffset, NULL);
 					if(!regexp)
 					{
 						snprintf(errormsg,128,"regular expression compilation failed");
 						return -1;
 					}
+					match_data = pcre2_match_data_create_from_pattern(regexp, NULL);
 				}
 				else
 					snprintf(errormsg,128,"no regular expression comtained in %s", file);
@@ -198,7 +200,8 @@ namespace GNET
 			ilen = len;
 			olen = 256;
 			iconv(cinput,&in,&ilen,&out,&olen);
-			return pcre_exec( regexp, NULL, buf, 256-olen, 0,  PCRE_NO_UTF8_CHECK, NULL,0) >= 0;      
+			int rc = pcre2_match(regexp, (PCRE2_SPTR)buf, (PCRE2_SIZE)(256-olen), 0, PCRE2_NO_UTF_CHECK, match_data, NULL);
+			return rc >= 0;
 		}
 	};
 
