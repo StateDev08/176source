@@ -149,7 +149,15 @@ installfunc()
 	copy_bin_optional "$PROJROOT/$NET/uniquenamed/uniquenamed" /home/uniquenamed/uniquenamed
 	copy_bin_optional "$PROJROOT/$NET/gamedbd/gamedbd"       /home/gamedbd/gamedbd
 	copy_bin_optional "$PROJROOT/$NET/gdeliveryd/gdeliveryd" /home/gdeliveryd/gdeliveryd
-	copy_bin_optional "$PROJROOT/$NET/glinkd/glinkd"         /home/glinkd/glinkd
+	# cnet/glinkd is a generated stub (empty Process/OnAddSession). Do not overwrite
+	# a real glinkd binary from the pwserver package with it.
+	if [ -f "$PROJROOT/$NET/glinkd/glinkd" ]; then
+		if [ -f /home/glinkd/glinkd ]; then
+			echo "WARNING: preserving existing /home/glinkd/glinkd (cnet/glinkd is a source stub)"
+		elif cp "$PROJROOT/$NET/glinkd/glinkd" /home/glinkd/glinkd 2>/dev/null; then
+			echo "WARNING: installed /home/glinkd/glinkd from cnet/glinkd; the generated stub cannot route game data"
+		fi
+	fi
 	copy_bin_optional "$PROJROOT/$NET/gacd/gacd"             /home/gacd/gacd
 	copy_bin_optional "$PROJROOT/$NET/logservice/logservice" /home/logservice/logservice
 	echo ""
