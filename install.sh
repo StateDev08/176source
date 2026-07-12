@@ -100,7 +100,7 @@ install_deps_debian() {
     # Core build tools
     local PACKAGES=(
         build-essential gcc g++ make cmake git
-        libxml2-dev libssl-dev libpcre2-dev zlib1g-dev
+        libxml2-dev libssl-dev libpcre3-dev zlib1g-dev
         libreadline-dev dos2unix
         libcurl4-openssl-dev libjsoncpp-dev
         libdb5.3++-dev
@@ -130,12 +130,9 @@ install_deps_debian() {
         log_warn "Could not find MySQL++ dev package. You may need to install it manually."
     fi
 
-    # PCRE: Debian 13+ / Ubuntu 25+ may only have libpcre2-dev
+    # PCRE1 (pcre.h) is required by cnet/common/matcher.h
     if ! apt-cache show libpcre3-dev &>/dev/null 2>&1; then
-        log_warn "libpcre3-dev not available, trying libpcre2-dev..."
-        # Remove libpcre3-dev from array and add libpcre2-dev
-        PACKAGES=("${PACKAGES[@]/libpcre3-dev/}")
-        PACKAGES+=(libpcre2-dev)
+        log_warn "libpcre3-dev not available. pcre.h may be missing and the build could fail."
     fi
 
     apt-get install -y --no-install-recommends "${PACKAGES[@]}"

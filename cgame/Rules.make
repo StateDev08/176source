@@ -7,7 +7,7 @@ BASEPATH=$(PROJROOT)/cgame
 INC=-I$(BASEPATH)/include -I$(BASEPATH) -I$(BASEPATH)/gs -I$(BASEPATH)/gs/template -I$(BASEPATH)/gs/instance -I$(IOPATH)/inc -I$(BASEPATH)/libcm -I$(PROJROOT)/cnet/io -I$(PROJROOT)/share/lua/src -I$(PROJROOT)/share/lua/LuaBridge -I$(PROJROOT)/share/lua/LuaBridge/detail -I$(PROJROOT)/cnet/licenseclient/vm -I/usr/include/mysql -I/usr/include/mysql++
 IOLIB_OBJ=$(wildcard $(BASEPATH)/libgs/gs/*.o $(BASEPATH)/libgs/io/*.o $(BASEPATH)/libgs/db/*.o $(BASEPATH)/libgs/sk/*.o $(BASEPATH)/libgs/log/*.o $(BASEPATH)/libgs/common/*.o)
 CMLIB=$(BASEPATH)/libcm.a $(wildcard $(BASEPATH)/libonline.a) $(IOLIB_OBJ) $(wildcard $(BASEPATH)/collision/libTrace.a) $(wildcard $(BASEPATH)/liblua.a)
-DEF = -DLINUX -D_DEBUG  -D__THREAD_SPIN_LOCK__ -DUSE_LOGCLIENT
+DEF = -DLINUX -D_DEBUG  -D__THREAD_SPIN_LOCK__ -DUSE_LOGCLIENT -D_DEFAULT_SOURCE
 DEF += -D__USER__=\"$(USER)\"
 
 THREAD = -D_REENTRANT -D_THREAD_SAFE -D_PTHREADS
