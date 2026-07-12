@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 #include <climits>
+#include <stdexcept>
 
 namespace GDB
 {
