@@ -113,7 +113,7 @@ public:
 		fdset.clear();
 		std::for_each(iomap.begin(), iomap.end(), std::ptr_fun(&UpdateEvent));
 
-		if (poll(&fdset[0], fdset.size(), timeout) > 0)	
+		if (!fdset.empty() && poll(&fdset[0], fdset.size(), timeout) > 0)	
 			std::for_each(fdset.begin(), fdset.end(), std::ptr_fun(&TriggerEvent));
 #if defined _REENTRANT
 		pthread_mutex_unlock(&locker_poll);
@@ -150,7 +150,8 @@ class PollControl : public PollIO
 		pipe(pds);
 		fcntl(pds[0], F_SETFL, fcntl(pds[0], F_GETFL)|O_NONBLOCK);
 		fcntl(pds[1], F_SETFL, fcntl(pds[1], F_GETFL)|O_NONBLOCK);
-		new PollControl(pds[0], pds[1]);
+		PollControl *io = new PollControl(pds[0], pds[1]);
+		io->Register();
 	}
 };
 
